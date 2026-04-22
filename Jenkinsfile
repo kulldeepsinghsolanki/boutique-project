@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "krishna100radha/boutique-app:latest"
+        IMAGE_NAME = "krishna100radha/boutique-app:${BUILD_NUMBER}"
     }
 
     stages {
@@ -30,7 +30,9 @@ pipeline {
 
         stage('Deploy to Kubernetes') {
             steps {
-                sh 'kubectl apply -f "Kubernetes Deployment"/'
+                sh """
+                kubectl set image deployment/boutique-app boutique=$IMAGE_NAME
+                """
             }
         }
     }
