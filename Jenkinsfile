@@ -7,19 +7,13 @@ pipeline {
 
     stages {
 
-        stage('Clone Code') {
-            steps {
-                git 'https://github.com/kulldeepsinghsolanki/boutique-project.git'
-            }
-        }
-
         stage('Build Docker Image') {
             steps {
                 sh 'docker build -t $IMAGE_NAME .'
             }
         }
 
-        stage('Push Image') {
+        stage('Login & Push to Docker Hub') {
             steps {
                 withCredentials([usernamePassword(
                     credentialsId: 'docker-creds',
@@ -38,6 +32,15 @@ pipeline {
             steps {
                 sh 'kubectl apply -f k8s/'
             }
+        }
+    }
+
+    post {
+        success {
+            echo '✅ Build, Push & Deployment Successful!'
+        }
+        failure {
+            echo '❌ Pipeline Failed. Check logs.'
         }
     }
 }
