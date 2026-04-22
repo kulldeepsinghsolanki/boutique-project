@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: boutique-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: boutique
+  template:
+    metadata:
+      labels:
+        app: boutique
+    spec:
+      containers:
+      - name: boutique
+        image: kulldeepsinghsolanki/boutique-app:latest
+        ports:
+        - containerPort: 80
