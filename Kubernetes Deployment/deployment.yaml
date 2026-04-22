@@ -14,6 +14,6 @@ spec:
     spec:
       containers:
       - name: boutique
-        image: kulldeepsinghsolanki/boutique-app:latest
+        image: krishna100radha/boutique-app:latest
         ports:
         - containerPort: 80
