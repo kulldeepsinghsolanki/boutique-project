@@ -2,14 +2,14 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "your-dockerhub-username/boutique-app"
+        IMAGE_NAME = "krishna100radha/boutique-app:latest"
     }
 
     stages {
 
         stage('Clone Code') {
             steps {
-                git 'https://github.com/your-username/boutique-app.git'
+                git 'https://github.com/kulldeepsinghsolanki/boutique-project.git'
             }
         }
 
