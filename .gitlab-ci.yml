@@ -1,0 +1,90 @@
+
+stages:
+  - validate
+  - build
+  - deploy
+
+variables:
+  DOCKER_IMAGE: "$CI_REGISTRY_IMAGE"
+  DOCKER_TLS_CERTDIR: ""
+
+# --------------------------------
+# STAGE 1: VALIDATE SOURCE CODE
+# --------------------------------
+validate:
+  stage: validate
+  tags:
+    - gst-runner
+  script:
+    - echo "Validating boutique-project..."
+    - test -f index.html
+    - test -f script.js
+    - test -f style.css
+    - test -f Dockerfile
+    - echo "Source validation successful"
+
+# --------------------------------
+# STAGE 2: BUILD AND PUSH IMAGE
+# --------------------------------
+build:
+  stage: build
+  tags:
+    - gst-runner
+  script:
+    - echo "Logging into GitLab Container Registry..."
+    - echo "$CI_REGISTRY_PASSWORD" | docker login "$CI_REGISTRY" -u "$CI_REGISTRY_USER" --password-stdin
+
+    - echo "Building Docker image..."
+    - docker build -t "$DOCKER_IMAGE:$CI_COMMIT_SHORT_SHA" -t "$DOCKER_IMAGE:latest" .
+
+    - echo "Pushing versioned image..."
+    - docker push "$DOCKER_IMAGE:$CI_COMMIT_SHORT_SHA"
+
+    - echo "Pushing latest image..."
+    - docker push "$DOCKER_IMAGE:latest"
+
+    - echo "Docker image build and push completed"
+
+# --------------------------------
+# STAGE 3: DEPLOY TO DOCKER SERVER
+# --------------------------------
+deploy:
+  stage: deploy
+  tags:
+    - gst-runner
+  needs:
+    - build
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+  script:
+    - echo "Preparing SSH connection..."
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - cp "$SSH_KNOWN_HOSTS" ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+    - chmod 600 "$SSH_PRIVATE_KEY"
+
+    - echo "Deploying boutique-project..."
+    - |
+      ssh -i "$SSH_PRIVATE_KEY" \
+        -o StrictHostKeyChecking=yes \
+        "$DEPLOY_USER@$DEPLOY_HOST" \
+        "IMAGE='$DOCKER_IMAGE:$CI_COMMIT_SHORT_SHA' bash -s" <<'REMOTE'
+      set -e
+
+      echo "Pulling latest application image..."
+      docker pull "$IMAGE"
+
+      echo "Stopping old container..."
+      docker rm -f boutique-project 2>/dev/null || true
+
+      echo "Starting new container..."
+      docker run -d \
+        --name boutique-project \
+        --restart unless-stopped \
+        -p 8080:80 \
+        "$IMAGE"
+
+      echo "Deployment successful!"
+      docker ps --filter name=boutique-project
+      REMOTE

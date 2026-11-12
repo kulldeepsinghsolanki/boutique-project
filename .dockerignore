@@ -1,0 +1,5 @@
+.git
+.gitlab-ci.yml
+Jenkinsfile
+README.md
+Kubernetes Deployment/
